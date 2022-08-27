@@ -1,0 +1,38 @@
+type Comment {
+  id: ID!
+  text: String!
+  author: User!
+  post: Post!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  version: Int!
+}
+
+type CommentsConnection {
+  edges: [CommentEdge!]!
+  pageInfo: PageInfo!
+}
+
+type CommentEdge {
+  node: Comment!
+  cursor: String!
+}
+
+type CommentPayload {
+  errors: [ErrorPayload]
+  comment: Comment
+}
+
+type DeleteCommentPayload {
+  errors: [ErrorPayload]
+  count: Int
+}
+
+input CreateCommentInput {
+  text: String!
+  post: ID!
+}
+
+input UpdateCommentInput {
+  text: String
+}

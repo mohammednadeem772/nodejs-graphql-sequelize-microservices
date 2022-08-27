@@ -1,0 +1,163 @@
+version: "3"
+
+services:
+  user-svc:
+    image: "user-svc:dev"
+    container_name: "user-svc"
+    build:
+      context: "./microservices/user-svc"
+    networks:
+      - "frontend"
+      - "backend"
+      - "usersdomain"
+    expose:
+      - "50051"
+    depends_on:
+      - "user-db"
+      - "cache"
+    environment:
+      NODE_ENV: "test"
+      GRPC_HOST: "0.0.0.0"
+      GRPC_PORT: "50052"
+      DB_DATABASE: "mysql"
+      DB_HOST: "user-db"
+      DB_PORT: "3307"
+      DB_USERNAME: "root"
+      DB_PASSWORD: ""
+      DB_SYNC: "true"
+    healthcheck:
+      test: ["CMD", "/bin/grpc_health_probe", "-addr=:50052"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    restart: "on-failure"
+
+  graphql-user-svc:
+    image: "graphql-user-svc:dev"
+    container_name: "graphql-user-svc"
+    build:
+      context: "./microservices/graphql-user-svc"
+    networks:
+      - "frontend"
+      - "backend"
+      - "usersdomain"
+    expose:
+      - "50051"
+    depends_on:
+      - "user-db"
+      - "cache"
+    environment:
+      NODE_ENV: "test"
+      GRPC_HOST: "0.0.0.0"
+      GRPC_PORT: "50052"
+      DB_DATABASE: "mysql"
+      DB_HOST: "graphql-user-db"
+      DB_PORT: "3307"
+      DB_USERNAME: "root"
+      DB_PASSWORD: ""
+      DB_SYNC: "true"
+    healthcheck:
+      test: ["CMD", "/bin/grpc_health_probe", "-addr=:50052"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    restart: "on-failure"
+
+  api-gateway:
+    image: "api-gateway:dev"
+    container_name: "api-gateway"
+    build:
+      context: "./api-gateway"
+    networks:
+      - "frontend"
+    ports:
+      - "3000:3000"
+    depends_on:
+      - "cache"
+      - "comments-svc"
+      - "posts-svc"
+      - "users-svc"
+      - "mailer-svc"
+    environment:
+      NODE_ENV: "test"
+      GRAPHQL_PORT: "3000"
+      REDIS_HOST: "cache"
+      REDIS_PORT: "6379"
+      JWT_ACCESSTOKEN_SECRET: "VtWeuJo5cPrH1gzvLX0HwPkcbVVeMkV0/a2JFeP3hGE="
+      JWT_REFRESHTOKEN_SECRET: "tPQz6vb7nJDilma85OQExilvgZX+QyEf1CL95DmfBLA="
+      JWT_ISSUER: "graphql-blog"
+      JWT_AUDIENCE: "public"
+      USER_SVC_URL: "user-svc:50051"
+      GRAPHQL_USER_SVC_URL: "graphql-user-svc:50051"
+    healthcheck:
+      test: ["CMD", "wget", "localhost:3000/healthz -q -O - > /dev/null 2>&1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    restart: "on-failure"
+
+  user-db:
+    image: mysql:5.7
+    container_name: "user-db"
+    networks:
+      - "usersdomain"
+    expose:
+      - "5432"
+    environment:
+      - MYSQL_ROOT_PASSWORD=''
+      - MYSQL_DATABASE='testdb'
+    ports:
+      - $MYSQLDB_LOCAL_PORT:8080
+    volumes:
+      - db:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "sh -c 'pg_isready -U mysql'"]
+      interval: 30s
+      timeout: 30s
+      retries: 3
+    restart: "on-failure"
+
+  graphql-user-db:
+    image: mysql:5.7
+    container_name: "graphql-user-db"
+    networks:
+      - "graphqlusersdomain"
+    expose:
+      - "5432"
+    environment:
+      - MYSQL_ROOT_PASSWORD=''
+      - MYSQL_DATABASE='testdb'
+    ports:
+      - $MYSQLDB_LOCAL_PORT:8080
+    volumes:
+      - db:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "sh -c 'pg_isready -U mysql'"]
+      interval: 30s
+      timeout: 30s
+      retries: 3
+    restart: "on-failure"
+
+
+  cache:
+    image: "redis:5.0.8-alpine"
+    container_name: "redis-cache"
+    networks:
+      - "frontend"
+      - "backend"
+    expose:
+      - "6379"
+    healthcheck:
+      test: ["CMD-SHELL", "sh -c 'redis-cli PING'"]
+      interval: 30s
+      timeout: 30s
+      retries: 3
+    restart: "on-failure"
+
+networks:
+  frontend:
+  backend:
+  userdomain:
+
+volumes:
+  userdata:

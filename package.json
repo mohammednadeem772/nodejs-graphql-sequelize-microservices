@@ -1,0 +1,25 @@
+{
+  "name": "nodejs-graphql-microservices",
+  "version": "1.0.0",
+  "description": "A sample GraphQL API Gateway with gRPC back-end microservices.",
+  "scripts": {
+    "docs:proto-gen": "sh ./scripts/generate-proto-docs.sh",
+    "install": "sh ./scripts/install.sh",
+    "lint": "sh ./scripts/lint.sh",
+    "build": "sh ./scripts/build.sh",
+    "docker:build": "docker-compose build",
+    "docker:start": "docker-compose up",
+    "docker:teardown": "docker-compose down",
+    "start": "npm run install && npm run lint && npm run build && npm run docker:build && npm run docker:start"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mohammednadeem772/nodejs-graphql-sequelize-microservices.git"
+  },
+  "author": "Nadeem",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/mohammednadeem772/nodejs-graphql-sequelize-microservices/issues"
+  },
+  "homepage": "https://github.com/mohammednadeem772/nodejs-graphql-sequelize-microservices#readme"
+}

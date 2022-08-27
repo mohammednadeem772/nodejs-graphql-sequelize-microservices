@@ -1,0 +1,69 @@
+version: "3"
+
+services:
+
+  users-svc:
+    build:
+      context: "."
+    networks:
+      - "user-svc"
+    ports:
+      - "50053:50052"
+    depends_on:
+      - "db"
+      - "cache"
+    environment:
+      NODE_ENV: "test"
+      GRPC_HOST: "0.0.0.0"
+      GRPC_PORT: "50052"
+      DB_DATABASE: "mysql"
+      DB_HOST: "db"
+      DB_PORT: "3307"
+      DB_USERNAME: "root"
+      DB_PASSWORD: ""
+      DB_SCHEMA: "public"
+      REDIS_HOST: "cache"
+      REDIS_PORT: "6379"
+    healthcheck:
+      test: ["CMD", "/bin/grpc_health_probe", "-addr=:50052"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    restart: "on-failure"
+
+  db:
+    image: mysql:5.7
+    env_file: ./.env.example
+    environment:
+      - MYSQL_ROOT_PASSWORD=$MYSQLDB_ROOT_PASSWORD
+      - MYSQL_DATABASE=$MYSQLDB_DATABASE
+    ports:
+      - $MYSQLDB_LOCAL_PORT:$MYSQLDB_DOCKER_PORT
+    volumes:
+      - db:/var/lib/mysql
+    networks:
+      - "user-svc"
+    expose:
+      - "5432"
+    healthcheck:
+      test: ["CMD-SHELL", "sh -c 'pg_isready -U postgres'"]
+      interval: 30s
+      timeout: 30s
+      retries: 3
+    restart: "on-failure"
+
+  cache:
+    image: "redis:5.0.8-alpine"
+    networks:
+      - "user-svc"
+    expose:
+      - "6379"
+    healthcheck:
+      test: ["CMD-SHELL", "sh -c 'redis-cli PING'"]
+      interval: 30s
+      timeout: 30s
+      retries: 3
+    restart: "on-failure"
+
+networks:
+  user-svc:
